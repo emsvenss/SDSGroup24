@@ -1,0 +1,105 @@
+library("ggplot2")
+
+summary(df$Amount)
+
+
+# Remove Outliers
+df.clean <- subset(df, df[, 4] != 8120303241)
+df.clean <- subset(df.clean, df[, 4] != 1)
+
+# Transaction type data frame
+df2 = data.frame(table(df.clean$Transaction, df.clean$day))
+names(df2) = c("Transaction", "Day", "Count")
+
+# Count per transaction type
+library("plyr")
+library("dplyr")
+df3 = df.clean %>% 
+  filter(Transaction != "") %>% 
+  group_by(Transaction) %>% 
+  summarise(count = n()) %>% 
+  arrange(-count)
+head(df3)
+
+# Sum the amount for each transaction type
+df4 <- data.frame(ddply(df.clean, c("Transaction"), summarise, Count = length(Amount), Amount = sum(Amount), Mean = mean(Amount), Views = sum(Views)))
+df4 <- data.frame(df4[order(df4$Amount),])
+
+df5 <- data.frame(ddply(df.clean, c("Transaction"), summarise,Count = length(Amount), Mean = mean(Amount)))
+df5 <- data.frame(df4[order(df4$Average),])
+
+df6 = data.frame(table(df4$Transaction, df5$Mean))
+names(df6) = c("Transaction", "Average", "Count")
+
+df7 <- data.frame(ddply(df4, c("Transaction"), summarise, Mean = sum(Mean)))
+
+
+####### GRAPHS ##########
+
+# Total count per day 
+p = ggplot(data = df2, aes(x = Day, y = Count))
+p = p + geom_histogram(aes(color=Day, fill = Day),stat = "identity") + theme_minimal() + labs(x ="Day", y = "Number of Reported Bribes", title = "Bribes Per Day")
+p
+# Most bribes were reported on the 12th
+
+# Daily increase for each transaction 
+p2 = ggplot(data = df2, aes(x = Day, y = Count))
+p2 + geom_histogram(aes(color=Day, fill = Day), stat = "identity") + theme(panel.background = element_blank()) + facet_wrap( ~ Transaction)
+
+#### Basic plot
+p3 = ggplot(data = df3, aes(x = Transaction, y = count))
+p3 = p3 + geom_histogram(aes(color = Transaction, fill=Transaction), stat = "identity") + theme(panel.background = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1)) + labs(x ="Transaction", y = "Number of Reported Bribes", title = "Number of Reported Bribes")
+p3
+
+# Count Bubble chart with ggplot 
+summary(df4$Count)
+p4 = ggplot(data = df4, aes(x = Count, y = Transaction))
+p4 = p4 + geom_point(aes(size = sqrt(Count/pi), color=Count, fill = Transaction),  pch = 21, show_guide = FALSE) + geom_text(aes(label=Transaction), size=4) + scale_size_continuous(range=c(1,90)) + scale_x_continuous(limits=c(0,250)) + theme(panel.background = element_blank(), axis.text.y = element_blank(), axis.ticks=element_blank(), legend.position="none") + labs(x ="Number of Reported Bribes Per Transaction Type", y = "Transaction", title = "Number of Reported Bribes") + theme(axis.text.y=element_blank(),axis.ticks=element_blank()) 
+p4
+
+# Amount Bubble chart with ggplot
+summary(df4$Amount)
+p5 = ggplot(data = df4, aes(x = Amount, y = Transaction))
+p5 = p5 + geom_point(aes(size = sqrt(Amount/pi), color=Amount, fill = Transaction),  pch = 21, show_guide = FALSE) +  geom_text(aes(label=Transaction), size=4) + scale_size_continuous(range=c(1,80))  + theme(panel.background = element_blank(), axis.text.y = element_blank(), axis.ticks=element_blank(), legend.position="none") + labs(x ="Total Amount Per Transaction Type", y = "Transaction Type", title = "Total Monetary Amount Per Transaction Type") + theme(axis.text.y=element_blank(),axis.ticks=element_blank())
+
+p5
+
+# Mean and Count Bubble chart with ggplot
+p8 = ggplot(data = df5, aes(x = Mean, y = Transaction))
+p8 = p8 + geom_point(aes(size = sqrt(Count/pi), color=Mean, fill = Transaction),  pch = 21, show_guide = FALSE) + geom_text(aes(label=Transaction), size=4) + theme(panel.background = element_blank(), axis.text.y = element_blank(), axis.ticks=element_blank(), legend.position="none") + scale_size_continuous(range=c(1,80))  + scale_x_log10() + labs(x ="Average Amount per Transaction Type", y = "Transaction Type", title = "Average Monetary Amount vs Count Per Transaction Type") 
+
+p8
+
+# Mean bubble
+p7 = ggplot(data = df5, aes(x = Mean, y = Transaction))
+p7 = p7 + geom_point(aes(size = sqrt(Mean/pi), color=Transaction, fill = Transaction),  pch = 21, show_guide = FALSE) + geom_text(aes(label=Transaction), size=4) + scale_size_continuous(range=c(1,80))  + theme_minimal() + labs(x ="Average Cost", y = "Transaction Type", title = "Average Cost Per Transaction Type") + theme(axis.text.y=element_blank(),axis.ticks=element_blank())
+
+p7
+
+# Plot of averages
+p6 = ggplot(data = df5, aes(x = Transaction, y = Mean))
+p6 = p6 + geom_histogram(aes(color = Transaction, fill = Transaction), stat = "identity") + theme(panel.background = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1)) + labs(x ="Transaction", y = "Average Cost", title = "Average Cost of Reported Bribes")
+
+p6
+
+
+# Non-ggplot bubble charts
+# Bubble Chart - Mean
+radius <- sqrt( df4$Mean/pi )
+symbols(df4$Mean, df4$Transaction, circles=radius, inches=0.8, fg="white", bg="red", xlab="Average Monetary Cost of Bribes", ylab="Number of Transactions")
+text(df4$Mean, df4$Transaction, df4$Transaction, cex=0.7)
+
+# Bubble Chart - Amount
+radius <- sqrt( df4$Amount/pi )
+symbols(df4$Amount, df4$Transaction, circles=radius, inches=0.8, fg="white", bg="red", xlab="Monetary Cost of Bribes", ylab="Number of Transactions")
+text(df4$Amount, df4$Transaction, df4$Transaction, cex=0.7)
+
+# Bubble Chart - count
+radius <- sqrt( df3$count/pi )
+symbols(df3$count, df3$Transaction, circles=radius, inches=0.9, fg="white", bg="red", xlab="Number of Bribes", ylab="Number of Transactions")
+text(df3$count, df3$Transaction, df3$Transaction, cex=0.7)
+# Birth certificate has the largest number of bribes, issue of ration card has the second largest number. 
+# Many of the categories have only a small number of bribes
+
+save.image("~/Dropbox/Social Data Science/Transactions.RData")
+
