@@ -1,0 +1,42 @@
+library("rvest")
+
+#Select Variables, all required Variable except "Amount", will extract later from the "Title"-Variable
+
+css.selector=  c(".views",".paid-amount", ".heading-3", ".location", ".transaction", ".name", ".date")
+var_names = c("Views","Amount", "Title", "Location", "Transaction", "Department", "Date")
+
+#Counter for the Webscraping pages (has to go in steps of 10, takes some time in calculation, 
+#now extracts first 40 observations)
+counter= seq(from=1, to=1000, by=10)
+
+for (p in 1:length(counter)){
+link = paste("http://www.ipaidabribe.com/reports/paid?page=",counter[p], sep="")
+  for (i in 1:length(css.selector)){
+      if (i==1){
+         tmp = read_html(link) %>% 
+         html_nodes(css = css.selector[i]) %>% 
+         html_text()
+         tmp= tmp[2:11]}
+      else{
+        tmp2 = read_html(link) %>% 
+        html_nodes(css = css.selector[i]) %>% 
+        html_text()
+        tmp = cbind(tmp, tmp2)}
+  }  
+  if(p==1){
+    df =  as.data.frame(tmp)}
+  else{
+    df2 = as.data.frame(tmp)
+    df = rbind(df, df2)   
+  }
+}  
+
+names(df) = var_names
+
+write.csv2(df, file="dataframe.csv")
+df <- read.csv2("dataframe_final.csv")
+
+save.image("~/Dropbox/Social Data Science/Webscraper.RData")
+
+
+  
