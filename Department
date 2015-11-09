@@ -1,0 +1,25 @@
+#remove the most obvious outlier 
+df=df[-c(33),]
+
+library(ggplot2)
+
+#showing which department is most corrputed 
+p = ggplot(data=df, aes(x=Department))
+p+geom_histogram(aes(color=Department, fill=Department))+
+  labs(title="Which Department is Most Corrupted", x="Department", y="Number of Cases")+
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+
+#the department that recieve the most money 
+summary(df$Amount)
+p2 = ggplot(data=df, aes(x=Department, y=Amount))
+p2+geom_jitter(aes(color=Department))+ labs(title = "Which Department Recieve the Most Money", x= "Department", y= "Amount (log scale)")+
+  scale_y_log10()+ theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))+geom_hline(yintercept=log10(mean(df$Amount, color="#17272B")))
+
+#Are there a replationship between the $$$ and Viwers and Department
+p3= ggplot(data=df, aes(x= Amount, y=Views))
+p3+geom_point(aes(colour=Department))+
+  geom_smooth(data=df[df$Views>0 & df$Amount > 0,], na.rm = TRUE, method="lm", se=FALSE, color="black")+
+  scale_x_log10()+scale_y_log10()+theme_minimal()+ #+facet_wrap(~Department)
+  labs(title="Relationship between Amount of Money and Viewers", x= "Amount Paid (log scale)", y= "Total Views (log scale)")
+
+save.image("~/Desktop/Department.RData")
