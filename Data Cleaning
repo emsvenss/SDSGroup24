@@ -1,0 +1,21 @@
+library("stringr")
+data_assignment_2$Views=gsub("views", "", data_assignment_2$Views)
+data_assignment_2$Amount=gsub("Paid INR", "", data_assignment_2$Amount)
+data_assignment_2$Amount=gsub(",", "", data_assignment_2$Amount)
+data_assignment_2$Province<-sub("\\w.*\\,", "", data_assignment_2$Location)
+data_assignment_2$City<-sub("\\,.*\\w", "", data_assignment_2$Location)
+
+
+
+data_assignment_2$month <- sub("(\\w+)\\s(\\d+)\\,\\s(\\d+)","\\1", data_assignment_2$Date)
+data_assignment_2$day <- sub("(\\w+)\\s(\\d+)\\,\\s(\\d+)","\\2", data_assignment_2$Date)
+data_assignment_2$year <- sub("(\\w+)\\s(\\d+)\\,\\s(\\d+)","\\3", data_assignment_2$Date)
+data_assignment_2$month <- str_extract_all(data_assignment_2$month,"^\\w\\w\\w")
+data_assignment_2$month <-match(data_assignment_2$month, month.abb)
+data_assignment_2$date <- paste(data_assignment_2$year, data_assignment_2$month, data_assignment_2$day, sep = "/")
+data_assignment_2f$date <- as.Date(data_assignment_2$date2,format='%Y/%m/%d')
+
+write.csv2(data_assignment_2, file="datafinal.csv")
+getwd()
+
+save.image("~/Dropbox/Social Data Science/Manipulation.RData")
