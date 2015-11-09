@@ -1,0 +1,88 @@
+path = "~/Desktop/Social Data Science"
+
+getwd()
+setwd(path)
+
+# Reading Data, loading packages
+  library(maps)
+  library(ggplot2)
+  library(sp)
+  library(RColorBrewer)
+  library(maptools)
+  library(dplyr)
+  library(stringr)
+  library(knitr)
+
+  df = read.csv2("datafinal.csv")
+#delete obvious outlier /false value in "Amount"-Variable
+  which.max(df$Amount)
+  df = df[-33,]
+
+#set variable level
+  df$Province = as.factor(df$Province)
+  df$Amount = as.numeric(df$Amount)
+
+#####plot for frequency
+  
+#subset for frequency of bribes by province
+  prov_freq = df %>% group_by(Province) %>%   summarise(freq= n())
+  names(prov_freq) = c("province", "freq")
+  prov_freq = prov_freq[-1,]
+prov_freq$province = tolower(as.character(prov_freq$province))
+  prov_freq$province = str_sub(prov_freq$province, start = 2)
+  
+
+#load map shapefile ( download from http://biogeo.ucdavis.edu/data/gadm2.8/rds/IND_adm1.rds )
+  ind1 = readRDS("IND_adm1.rds")  
+#extract area information
+  areas = as.data.frame(ind1$NAME_1)
+  names(areas) = c("province")
+  areas$province = as.character(tolower(areas$province))
+
+#merge area information and frequency by are
+  mrg =left_join(x =areas, y = prov_freq, by = "province")
+  mrg$log_f = log(mrg$freq)
+
+#plot the map
+  #define data to plot and add to map-information
+    ind1$data = as.numeric(mrg$log_f)
+  #define breakpoints
+    col_no = as.factor(as.numeric(cut(ind1$data, breaks=5)))
+    levels(col_no) = c("< 4", "< 12", "< 40","< 120", "= 434")
+    ind1$col_no = col_no
+  #chose color palette
+    myPalette = brewer.pal(5,"Greens")
+  #plot
+    map1 = spplot(ind1, "col_no", col=grey(.5), col.regions=myPalette, main="Absolute Number of Reported Bribes by State")
+
+
+####plot for mean
+
+#subset for mean by province and some string corrections
+  prov_mean = df %>% group_by(Province) %>%   summarise(mean= mean(Amount))
+  names(prov_mean) = c("province", "mean")
+  prov_mean = prov_mean[-1,]
+  prov_mean$province = as.character(tolower(prov_mean$province))
+  prov_mean$province = str_sub(prov_mean$province, start = 2)
+  prov_mean$mean = as.numeric(prov_mean$mean)
+
+#merge the information
+  mrg3 = left_join(x =areas, y = prov_mean, by = c("province"))
+  mrg3$log_m = log(mrg3$mean)
+
+#plot the map
+  #define data to plot and add to map-information
+    ind1$data3 = as.numeric(mrg3$log_m)
+  #define breakpoints
+    col_no = as.factor(as.numeric(cut(ind1$data3, breaks=5)))
+    levels(col_no) = c("< 320 Rs.", "< 1300 Rs.", "< 5300 Rs.","< 22 000 Rs.", "< 90 0000 Rs.")
+    ind1$col_no = col_no
+  #chose color palette
+    myPalette = brewer.pal(5,"Greens")
+  #plot
+    map2 = spplot(ind1, "col_no", col=grey(.5), col.regions=myPalette, main="Mean Amount of Reported Bribes by State")
+
+save.image("~/Desktop/Social Data Science/maps.RData")
+
+map1
+map2
